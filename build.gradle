@@ -56,7 +56,7 @@ project(":core") {
 
 
     dependencies {
-        compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+        compile project(":liquidfun")
         compile "net.dermetfan.libgdx-utils:libgdx-utils:0.13.3"
         compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
     }
@@ -65,14 +65,16 @@ project(":core") {
 project(":desktop") {
     apply plugin: "java"
 
-
     dependencies {
         compile project(":core")
         compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
         compile "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+        compile files(project(":liquidfun").projectDir.absolutePath + '/libs/gdx-liquidfun-natives.jar')
     }
 }
+
+
 
 tasks.eclipse.doLast {
     delete ".project"

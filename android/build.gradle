@@ -1,6 +1,8 @@
 android {
     buildToolsVersion "23.0.3"
-    compileSdkVersion 21
+    compileSdkVersion 18
+
+
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
@@ -9,15 +11,16 @@ android {
             renderscript.srcDirs = ['src']
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
-            jniLibs.srcDirs = ['libs']
+            jniLibs.srcDirs = ['libs' , project(":liquidfun").projectDir.absolutePath + '/libs' ]
         }
 
         instrumentTest.setRoot('tests')
     }
+
     defaultConfig {
         applicationId "com.fr.game"
         minSdkVersion 8
-        targetSdkVersion 21
+        targetSdkVersion 18
     }
 }
 
@@ -68,7 +71,7 @@ task run(type: Exec) {
     }
 
     def adb = path + "/platform-tools/adb"
-    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.fr.game/com.fr.game.AndroidLauncher'
+    commandLine "$adb", 'shell', 'am', 'start', '-n', 'com.fr.game.AndroidLauncher'
 }
 
 // sets up the Android Eclipse project, using the old Ant based build.

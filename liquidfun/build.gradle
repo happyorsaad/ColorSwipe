@@ -1,0 +1,56 @@
+apply plugin: 'java'
+
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def sdkDir = properties.getProperty('sdk.dir')
+def ndkDir = properties.getProperty('ndk.dir')
+
+buildscript {
+    dependencies {
+        classpath files('libs/gdx-jnigen.jar')
+    }
+}
+
+dependencies {
+    compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+}
+
+import com.badlogic.gdx.jnigen.AntScriptGenerator;
+import com.badlogic.gdx.jnigen.BuildConfig;
+import com.badlogic.gdx.jnigen.BuildExecutor;
+import com.badlogic.gdx.jnigen.BuildTarget;
+import com.badlogic.gdx.jnigen.BuildTarget.TargetOs;
+import com.badlogic.gdx.jnigen.NativeCodeGenerator;
+import org.apache.tools.ant.taskdefs.condition.Os
+
+BuildTarget win32 = BuildTarget.newDefaultTarget(TargetOs.Windows, false); win32.compilerPrefix = "mingw32-";
+//		BuildTarget win64 = BuildTarget.newDefaultTarget(TargetOs.Windows, true);
+BuildTarget lin32 = BuildTarget.newDefaultTarget(TargetOs.Linux, false);
+//		BuildTarget lin64 = BuildTarget.newDefaultTarget(TargetOs.Linux, true);
+BuildTarget android = BuildTarget.newDefaultTarget(TargetOs.Android, false);
+BuildTarget mac32 = BuildTarget.newDefaultTarget(TargetOs.MacOsX, false);
+//		BuildTarget mac64 = BuildTarget.newDefaultTarget(TargetOs.MacOsX, true);
+BuildTarget ios = BuildTarget.newDefaultTarget(TargetOs.IOS, false);
+
+task generateNativeCode << {
+    NativeCodeGenerator codeGenerator = new NativeCodeGenerator();
+    sourceSets.main.java.srcDirs.each { srcDir ->
+        codeGenerator.generate(srcDir.absolutePath , sourceSets.main.output.classesDir.absolutePath, "jni");
+    }
+    println "Code Generation Done";
+}
+
+task executeAntScripts(dependsOn : 'generateNativeCode') << {
+    BuildExecutor.executeAnt("jni/build.xml", "-v");
+}
+
+task runNDK(dependsOn: 'executeAntScripts') << {
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        commandLine "${ndkDir}/ndk-build.cmd", '-C', 'jni'
+    }else{
+        commandLine "${ndkDir}/ndk-build.cmd", '-C', 'jni'
+    }
+}

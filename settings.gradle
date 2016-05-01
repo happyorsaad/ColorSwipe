@@ -1,1 +1,2 @@
+include ':liquidfun'
 include 'android', 'core', 'desktop'
