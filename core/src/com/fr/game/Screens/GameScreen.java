@@ -6,11 +6,11 @@ import com.fr.game.main.ColorSwipe;
 /**
  * Created by syhussai on 4/30/2016.
  */
-public class GameScreen implements Screen{
+public class GameScreen implements Screen {
 
     ColorSwipe gameRef;
 
-    public GameScreen(ColorSwipe gameRef){
+    public GameScreen(ColorSwipe gameRef) {
         this.gameRef = gameRef;
     }
 

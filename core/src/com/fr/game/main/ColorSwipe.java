@@ -9,9 +9,10 @@ package com.fr.game.main;
 
 /**
  * Created by syhussai on 4/29/2016.
- *
+ * <p/>
  * Entry Point Of The Game
  */
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -33,12 +34,23 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Contact;
+import com.badlogic.gdx.physics.box2d.ContactFilter;
+import com.badlogic.gdx.physics.box2d.ContactImpulse;
+import com.badlogic.gdx.physics.box2d.ContactListener;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.fr.game.Entities.Bubble;
+import com.fr.game.Entities.RevolvingWalls;
 
+import finnstr.libgdx.liquidfun.ParticleBodyContact;
+import finnstr.libgdx.liquidfun.ParticleContact;
 import finnstr.libgdx.liquidfun.ParticleDebugRenderer;
 import finnstr.libgdx.liquidfun.ParticleDef.ParticleType;
+import finnstr.libgdx.liquidfun.ParticleGroup;
 import finnstr.libgdx.liquidfun.ParticleGroupDef;
 import finnstr.libgdx.liquidfun.ParticleSystem;
 import finnstr.libgdx.liquidfun.ParticleSystemDef;
@@ -60,6 +72,7 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
 
     private ParticleGroupDef mParticleGroupDef1;
     private ParticleGroupDef mParticleGroupDef2;
+    private RevolvingWalls walls;
 
     @Override
     public void create() {
@@ -78,57 +91,29 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
 
         sprite = new Sprite(region);
         sprite.setSize(width, height);
-        sprite.setOrigin(sprite.getWidth()/2, sprite.getHeight()/2);
+        sprite.setOrigin(sprite.getWidth() / 2, sprite.getHeight() / 2);
         sprite.setPosition(0, 0);
 
         createBox2DWorld(width, height);
-        createParticleStuff(width, height);
+//        createParticleStuff(width, height);
 
         /* Render stuff */
         mDebugRenderer = new Box2DDebugRenderer();
-        mParticleDebugRenderer = new ParticleDebugRenderer(new Color(0, 1, 0, 1), mParticleSystem.getParticleCount());
+        mParticleDebugRenderer = new ParticleDebugRenderer(new Color(0, 1, 0, 1), bubble.bubbleSystem.getParticleCount());
+
+        System.out.println("NOP" + bubble.bubbleSystem.getParticleCount());
 
         /* Version */
-        Gdx.app.log("Running LiquidFun version", mParticleSystem.getVersionString());
+//        Gdx.app.log("Running LiquidFun version", mParticleSystem.getVersionString());
         updateLog();
     }
 
+    Bubble bubble;
+
     private void createBox2DWorld(float width, float height) {
-        mWorld = new World(new Vector2(0, -9.8f), false);
-
-        /* Bottom */
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyType.StaticBody;
-        bodyDef.position.set(width * WORLD_TO_BOX / 2f, height * (2f / 100f) * WORLD_TO_BOX / 2f);
-        //bodyDef.angle = (float) Math.toRadians(-30);
-        Body ground = mWorld.createBody(bodyDef);
-
-        PolygonShape shape = new PolygonShape();
-        shape.setAsBox(width * WORLD_TO_BOX / 2, height * (2f / 100f) * WORLD_TO_BOX / 2f);
-
-        FixtureDef fixDef = new FixtureDef();
-        fixDef.friction = 0.2f;
-        fixDef.shape = shape;
-        ground.createFixture(fixDef);
-
-        shape.dispose();
-
-        /* Walls */
-        BodyDef bodyDef1 = new BodyDef();
-        bodyDef1.type = BodyType.StaticBody;
-        bodyDef1.position.set(width * (2f / 100f) * WORLD_TO_BOX / 2f, height * WORLD_TO_BOX / 2);
-        Body left = mWorld.createBody(bodyDef1);
-
-        bodyDef1.position.set(width * WORLD_TO_BOX - width * (2f / 100f) * WORLD_TO_BOX / 2f, height * WORLD_TO_BOX / 2);
-        Body right = mWorld.createBody(bodyDef1);
-
-        shape = new PolygonShape();
-        shape.setAsBox(width * (2f / 100f) * WORLD_TO_BOX / 2f, height * WORLD_TO_BOX / 2);
-        fixDef.shape = shape;
-
-        left.createFixture(fixDef);
-        right.createFixture(fixDef);
-        shape.dispose();
+        mWorld = new World(new Vector2(0, 0f), false);
+        walls = new RevolvingWalls.Builder(mWorld, 12).setRadius(1.5f).skipEvery(1).setWallThickness(0.1f).setCenter(1.5f, 1.5f).rotateEverySpinBy(90).build();
+        bubble = new Bubble(mWorld, new Vector2(1.5f, 1.5f), Color.BLACK);
     }
 
     private void createParticleStuff(float width, float height) {
@@ -167,7 +152,8 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
         mParticleGroupDef2.groupFlags = mParticleGroupDef1.groupFlags;
         mParticleGroupDef2.position.set(width * (70f / 100f) * WORLD_TO_BOX, height * (80f / 100f) * WORLD_TO_BOX);
         mParticleGroupDef2.color.set(0.2f, 1f, 0.3f, 1);
-        mParticleSystem.createParticleGroup(mParticleGroupDef2);
+
+        ParticleGroup mGrpOne = mParticleSystem.createParticleGroup(mParticleGroupDef2);
 
         //Here we create a new shape and we set a
         //linear velocity. This is used in createParticles1()
@@ -180,6 +166,7 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
 
         mParticleGroupDef1.linearVelocity.set(new Vector2(0, -10f));
         mParticleGroupDef2.linearVelocity.set(new Vector2(0, -10f));
+
     }
 
     @Override
@@ -191,21 +178,24 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        mWorld.step(Gdx.graphics.getDeltaTime(), 10, 6, mParticleSystem.calculateReasonableParticleIterations(Gdx.graphics.getDeltaTime()));
+        bubble.update(Gdx.graphics.getDeltaTime());
+        walls.update(Gdx.graphics.getDeltaTime());
+        mWorld.step(Gdx.graphics.getDeltaTime(), 10, 6, 2);
 
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        sprite.draw(batch);
-        batch.end();
+//        batch.setProjectionMatrix(camera.combined);
+//        batch.begin();
+//        sprite.draw(batch);
+//        batch.end();
 
         //Get the combined matrix and scale it down to
         //our Box2D size
         Matrix4 cameraCombined = camera.combined.cpy();
         cameraCombined.scale(BOX_TO_WORLD, BOX_TO_WORLD, 1);
 
+//        System.out.println(bubble.bubbleSystem.getParticleCount());
         //First render the particles and then the Box2D world
-        mParticleDebugRenderer.render(mParticleSystem, BOX_TO_WORLD, cameraCombined);
+        mParticleDebugRenderer.render(bubble.bubbleSystem, BOX_TO_WORLD, cameraCombined);
         mDebugRenderer.render(mWorld, cameraCombined);
     }
 
@@ -233,14 +223,14 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
     }
 
     private void updateParticleCount() {
-        if(mParticleSystem.getParticleCount() > mParticleDebugRenderer.getMaxParticleNumber()) {
+        if (mParticleSystem.getParticleCount() > mParticleDebugRenderer.getMaxParticleNumber()) {
             mParticleDebugRenderer.setMaxParticleNumber(mParticleSystem.getParticleCount() + 1000);
         }
     }
 
     public void updateLog() {
         //Here we log the total particle count and the f/s
-        Gdx.app.log("", "Total particles: " + mParticleSystem.getParticleCount() + " FPS: " + Gdx.graphics.getFramesPerSecond()+"");
+//        Gdx.app.log("", "Total particles: " + mParticleSystem.getParticleCount() + " FPS: " + Gdx.graphics.getFramesPerSecond()+"");
     }
 
     public void createCircleBody(float pX, float pY, float pRadius) {
@@ -273,34 +263,37 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        if(button != Input.Buttons.LEFT && button != Input.Buttons.RIGHT && button != Input.Buttons.MIDDLE) return false;
+        if (button != Input.Buttons.LEFT && button != Input.Buttons.RIGHT && button != Input.Buttons.MIDDLE)
+            return false;
 
-        if(button == Input.Buttons.MIDDLE) {
-            this.createCircleBody(screenX, Gdx.graphics.getHeight() - screenY, MathUtils.random(10, 80));
-            return true;
-        }
-
-        mCreateParticles = true;
-        mCurrentButton = button;
-        mTotDelta = 0;
-
-        mPointerPosX = screenX;
-        mPointerPosY = screenY;
+//        if(button == Input.Buttons.MIDDLE) {
+//            this.createCircleBody(screenX, Gdx.graphics.getHeight() - screenY, MathUtils.random(10, 80));
+//            return true;
+//        }
+//
+//        mCreateParticles = true;
+//        mCurrentButton = button;
+//        mTotDelta = 0;
+//
+//        mPointerPosX = screenX;
+//        mPointerPosY = screenY;
 
         return true;
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if(button != Input.Buttons.LEFT && button != Input.Buttons.RIGHT && button != Input.Buttons.MIDDLE) return false;
-
-        mCreateParticles = false;
+        if (button != Input.Buttons.LEFT && button != Input.Buttons.RIGHT && button != Input.Buttons.MIDDLE)
+            return false;
+        bubble.startMoving(0.1f, 0);
+//        walls.destroy();
+//        mCreateParticles = false;
         return true;
     }
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
-        if(!mCreateParticles) return false;
+        if (!mCreateParticles) return false;
 
         mPointerPosX = screenX;
         mPointerPosY = screenY;
@@ -319,30 +312,36 @@ public class ColorSwipe extends ApplicationAdapter implements InputProcessor {
     }
 
     public void inputUpdate(float pDelta) {
-        if(!mCreateParticles) return;
+        if (!mCreateParticles) return;
         mTotDelta += pDelta;
 
-        if(mTotDelta >= 1f / CREATE_PARTICLE_FREQUENCY) {
+        if (mTotDelta >= 1f / CREATE_PARTICLE_FREQUENCY) {
             mTotDelta -= 1 / CREATE_PARTICLE_FREQUENCY;
         } else return;
 
-        float x = mPointerPosX + MathUtils.random(-Gdx.graphics.getWidth() * (1.5f/100f), Gdx.graphics.getWidth() * (1.5f/100f));
-        float y = mPointerPosY + MathUtils.random(-Gdx.graphics.getHeight() * (1.5f/100f), Gdx.graphics.getHeight() * (1.5f/100f));
+        float x = mPointerPosX + MathUtils.random(-Gdx.graphics.getWidth() * (1.5f / 100f), Gdx.graphics.getWidth() * (1.5f / 100f));
+        float y = mPointerPosY + MathUtils.random(-Gdx.graphics.getHeight() * (1.5f / 100f), Gdx.graphics.getHeight() * (1.5f / 100f));
 
-        if(mCurrentButton == Input.Buttons.LEFT) {
+        if (mCurrentButton == Input.Buttons.LEFT) {
             this.createParticles1(x, Gdx.graphics.getHeight() - y);
-        } else if(mCurrentButton == Input.Buttons.RIGHT) {
+        } else if (mCurrentButton == Input.Buttons.RIGHT) {
             this.createParticles2(x, Gdx.graphics.getHeight() - y);
         }
     }
 
     @Override
-    public boolean keyDown(int keycode) {return false;}
+    public boolean keyDown(int keycode) {
+        return false;
+    }
 
     @Override
-    public boolean keyUp(int keycode) {return false;}
+    public boolean keyUp(int keycode) {
+        return false;
+    }
 
     @Override
-    public boolean keyTyped(char character) {return false;}
+    public boolean keyTyped(char character) {
+        return false;
+    }
 
 }
